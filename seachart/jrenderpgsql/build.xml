@@ -9,13 +9,13 @@
   </target>
 
   <target name="compile" depends="init" description="compile the source " >
-    <javac classpath="/usr/share/java/postgis-jdbc-2.2.1.jar:/usr/share/java/postgresql.jar" includeantruntime="false" sourcepath="${srcmain}" srcdir="${src}" destdir="${build}" encoding="UTF-8" />
+    <javac classpath="/usr/share/java/postgis-jdbc.jar:/usr/share/java/postgresql.jar" includeantruntime="false" sourcepath="${srcmain}" srcdir="${src}" destdir="${build}" encoding="UTF-8" />
   </target>
 
   <target name="dist" depends="compile" description="generate the distribution" >
     <jar jarfile="${jarfile}" basedir="${build}" manifestencoding="UTF-8">
       <zipgroupfileset dir="/usr/share/java" includes="postgresql.jar" />
-      <zipgroupfileset dir="/usr/share/java" includes="postgis-jdbc-2.2.1.jar" />
+      <zipgroupfileset dir="/usr/share/java" includes="postgis-jdbc.jar" />
       <manifest>
         <attribute name="Main-Class" value="jrenderpgsql.JrenderPgsql"/>
         <attribute name="Class-Path" value="$jarfile"/>
