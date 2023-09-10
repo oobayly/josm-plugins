@@ -110,6 +110,26 @@ public final class Topmarks {
 
     public static final Symbol TopCanSphere = new Symbol();
     public static final Symbol TopCircle = new Symbol();
+    static {
+        Path2D.Double circle = new Path2D.Double(); circle.moveTo(-13.0, -14.0); circle.curveTo(-13.0, -21.2, -7.2, -27.0, 0.0, -27.0);
+        circle.curveTo(7.2, -27.0, 13.0, -21.2, 13.0, -14.0); circle.curveTo(13.0, -6.8, 7.2, -1.0, 0.0, -1.0);
+        circle.curveTo(-7.2, -1.0, -13.0, -6.8, -13.0, -14.0); circle.closePath();
+
+        TopCircle.add(new Instr(Form.BBOX, new Rectangle2D.Double(-20, -80, 40, 80)));
+        Symbol colours = new Symbol();
+        colours.add(new Instr(Form.P1, circle));
+        Path2D.Double p = new Path2D.Double(); p.moveTo(0.0, -27.0); p.curveTo(7.2, -27.0, 13.0, -21.2, 13.0, -14.0);
+        p.curveTo(13.0, -6.8, 7.2, -1.0, 0.0, -1.0); p.closePath();
+        colours.add(new Instr(Form.V2, p));
+        p = new Path2D.Double(); p.moveTo(13.0, -14.0); p.curveTo(13.0, -6.8, 7.2, -1.0, 0.0, -1.0);
+        p.curveTo(-7.2, -1.0, -13.0, -6.8, -13.0, -14.0); p.closePath();
+        colours.add(new Instr(Form.H2, p));
+        TopCircle.add(new Instr(Form.COLR, colours));
+        TopCircle.add(new Instr(Form.STRK, new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)));
+        TopCircle.add(new Instr(Form.FILL, Color.black));
+        TopCircle.add(new Instr(Form.PLIN, circle));
+    }
+
     public static final Symbol TopCircleTriangle = new Symbol();
     public static final Symbol TopCone = new Symbol();
     static {
@@ -435,6 +455,8 @@ public final class Topmarks {
         Symbol colours = new Symbol();
         Path2D.Double p = new Path2D.Double(); p.moveTo(-20.0, -1.0); p.lineTo(-13.0, -27.0); p.lineTo(13.0, -27.0); p.lineTo(20.0, -1.0); p.closePath();
         colours.add(new Instr(Form.P1, p));
+        p = new Path2D.Double(); p.moveTo(0.0, -1.0); p.lineTo(0.0, -27.0); p.lineTo(13.0, -27.0); p.lineTo(20.0, -1.0); p.closePath();
+        colours.add(new Instr(Form.V2, p));
         TopTrapeziumU.add(new Instr(Form.COLR, colours));
         TopTrapeziumU.add(new Instr(Form.STRK, new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)));
         TopTrapeziumU.add(new Instr(Form.FILL, Color.black));
@@ -448,6 +470,8 @@ public final class Topmarks {
         Symbol colours = new Symbol();
         Path2D.Double p = new Path2D.Double(); p.moveTo(-13.0, -1.0); p.lineTo(-20.0, -27.0); p.lineTo(20.0, -27.0); p.lineTo(13.0, -1.0); p.closePath();
         colours.add(new Instr(Form.P1, p));
+        p = new Path2D.Double(); p.moveTo(0.0, -1.0); p.lineTo(0.0, -27.0); p.lineTo(20.0, -27.0); p.lineTo(13.0, -1.0); p.closePath();
+        colours.add(new Instr(Form.V2, p));
         TopTrapeziumD.add(new Instr(Form.COLR, colours));
         TopTrapeziumD.add(new Instr(Form.STRK, new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)));
         TopTrapeziumD.add(new Instr(Form.FILL, Color.black));
