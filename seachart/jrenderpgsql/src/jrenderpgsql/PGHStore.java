@@ -26,19 +26,18 @@ import java.util.Iterator;
 import java.util.Collection;
 
 import org.postgresql.util.PGobject;
+
 /**
  * This implements a class that handles the PostgreSQL contrib/hstore type
  */
-public class PGHStore extends PGobject implements Serializable, Cloneable, Map
-{
+public class PGHStore extends PGobject implements Serializable, Cloneable, Map {
     private final static long serialVersionUID = 1;
     private Map _map;
 
     /**
      * required by the driver
      */
-    public PGHStore()
-    {
+    public PGHStore() {
         setType("hstore");
         _map = new HashMap();
     }
@@ -47,32 +46,29 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
      * Initialize a hstore with a given string representation
      *
      * @param value String representated hstore
-     * @throws SQLException Is thrown if the string representation has an unknown format
+     * @throws SQLException Is thrown if the string representation has an unknown
+     *                      format
      * @see #setValue(String)
      */
     public PGHStore(String value)
-    throws SQLException
-    {
+            throws SQLException {
         this();
         setValue(value);
     }
 
-    public PGHStore(Map map)
-    {
+    public PGHStore(Map map) {
         this();
         setValue(map);
     }
 
-    public void setValue(Map map)
-    {
+    public void setValue(Map map) {
         _map = map;
     }
 
     /**
      */
     public void setValue(String value)
-    throws SQLException
-    {
+            throws SQLException {
         Parser p = new Parser();
         _map = p.parse(value);
     }
@@ -82,8 +78,7 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
      *
      * @return String represented hstore
      */
-    public String getValue()
-    {
+    public String getValue() {
         StringBuffer buf = new StringBuffer();
         Iterator i = _map.keySet().iterator();
         boolean first = true;
@@ -114,7 +109,7 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
         String s = o.toString();
 
         buf.append('"');
-        for (int i=0; i<s.length(); i++) {
+        for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (c == '"' || c == '\\') {
                 buf.append('\\');
@@ -124,15 +119,13 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
         buf.append('"');
     }
 
-
     /**
      * Returns whether an object is equal to this one or not
      *
      * @param obj Object to compare with
      * @return true if the two hstores are identical
      */
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (obj == null)
             return false;
 
@@ -142,7 +135,7 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
         if (!(obj instanceof PGHStore))
             return false;
 
-        return _map.equals(((PGHStore)obj)._map);
+        return _map.equals(((PGHStore) obj)._map);
 
     }
 
@@ -170,17 +163,17 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
         public Parser() {
         }
 
-    	@SuppressWarnings("unchecked")
+        @SuppressWarnings("unchecked")
         private Map parse(String value) throws SQLException {
             this.value = value;
             ptr = 0;
             keys = new ArrayList();
             values = new ArrayList();
-            
+
             parseHStore();
 
             Map map = new HashMap();
-            for (int i=0; i<keys.size(); i++) {
+            for (int i = 0; i < keys.size(); i++) {
                 map.put(keys.get(i), values.get(i));
             }
 
@@ -263,7 +256,7 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
             }
         }
 
-    	@SuppressWarnings("unchecked")
+        @SuppressWarnings("unchecked")
         private void parseHStore() throws SQLException {
             int state = WKEY;
             escaped = false;
@@ -311,8 +304,7 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
                     values.add(val);
                     state = WDEL;
                 } else if (state == WDEL) {
-                    if (c == ',')
-                    {
+                    if (c == ',') {
                         state = WKEY;
                     } else if (c == '\0') {
                         return;
@@ -329,35 +321,60 @@ public class PGHStore extends PGobject implements Serializable, Cloneable, Map
 
     }
 
-
     // Farm out all the work to the real underlying map.
 
-    public void clear() { _map.clear(); }
+    public void clear() {
+        _map.clear();
+    }
 
-    public boolean containsKey(Object key) { return _map.containsKey(key); }
+    public boolean containsKey(Object key) {
+        return _map.containsKey(key);
+    }
 
-    public boolean containsValue(Object value) { return _map.containsValue(value); }
+    public boolean containsValue(Object value) {
+        return _map.containsValue(value);
+    }
 
-    public Set entrySet() { return _map.entrySet(); }
+    public Set entrySet() {
+        return _map.entrySet();
+    }
 
-    public Object get(Object key) { return _map.get(key); }
+    public Object get(Object key) {
+        return _map.get(key);
+    }
 
-    public int hashCode() { return _map.hashCode(); }
+    public int hashCode() {
+        return _map.hashCode();
+    }
 
-    public boolean isEmpty() { return _map.isEmpty(); }
+    public boolean isEmpty() {
+        return _map.isEmpty();
+    }
 
-    public Set keySet() { return _map.keySet(); }
+    public Set keySet() {
+        return _map.keySet();
+    }
 
     @SuppressWarnings("unchecked")
-    public Object put(Object key, Object value) { return _map.put(key, value); }
+    public Object put(Object key, Object value) {
+        return _map.put(key, value);
+    }
 
     @SuppressWarnings("unchecked")
-    public void putAll(Map m) { _map.putAll(m); }
+    public void putAll(Map m) {
+        _map.putAll(m);
+    }
 
-    public Object remove(Object key) { return _map.remove(key); }
+    public Object remove(Object key) {
+        return _map.remove(key);
+    }
 
-    public int size() { return _map.size(); }
+    public int size() {
+        return _map.size();
+    }
 
-    public Collection values() { return _map.values(); }
+    public Collection values() {
+        return _map.values();
+    }
 
 }
