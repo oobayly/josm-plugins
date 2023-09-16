@@ -167,19 +167,17 @@ public final class JRenderCore {
 
         final BufferedImage img = new BufferedImage(tileSize, tileSize, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g2 = img.createGraphics();
+        final Renderer renderer = new Renderer(g2,
+            zoom,
+            scale * Math.pow(2, (zoom - 12)), // Symbol scale factor
+            map,
+            context);
 
         // Translate to the origin of the tile
         g2.translate(-tileX * tileSize, -tileY * tileSize);
 
-        // Render
-        Renderer.reRender(
-                g2,
-                new Rectangle(tileSize, tileSize),
-                zoom,
-                scale * Math.pow(2, (zoom - 12)), // Symbol scale factor
-                map,
-                context);
-
+        // Render and write
+        renderer.reRender(new Rectangle(tileSize, tileSize));
         ImageIO.write(img, "png", oStream);
     }
 

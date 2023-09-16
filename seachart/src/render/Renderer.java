@@ -24,6 +24,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import s57.S57map;
+import s57.S57map.Feature;
 import s57.S57map.GeomIterator;
 import s57.S57map.Pflag;
 import s57.S57map.Snode;
@@ -44,27 +45,26 @@ import symbols.Symbols.Symbol;
  * @author Malcolm Herring
  */
 public final class Renderer {
-    private Renderer() {
-        // Hide default constructor for utilities classes
-    }
-
     public static final double[] symbolScale = {
             256.0, 128.0, 64.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0, 0.61, 0.372, 0.227, 0.138, 0.0843, 0.0514, 0.0313, 0.0191, 0.0117, 0.007};
 
     public enum LabelStyle { NONE, RRCT, RECT, ELPS, CIRC, VCLR, PCLR, HCLR }
 
-    static ChartContext context;
-    static S57map map;
-    static double sScale;
-    static Graphics2D g2;
-    static int zoom;
+    public final ChartContext context;
+    public final S57map map;
+    private final double sScale;
+    private final Graphics2D g2;
+    public final int zoom;
 
-    public static void reRender(Graphics2D g, Rectangle rect, int z, double factor, S57map m, ChartContext c) {
+    public Renderer(Graphics2D g, int z, double factor, S57map m, ChartContext c) {
         g2 = g;
         zoom = z;
         context = c;
         map = m;
         sScale = symbolScale[zoom] * factor;
+    }
+
+    public void reRender(Rectangle rect) {
         if (map != null) {
             if (context.clip()) {
                 Point2D tl = context.getPoint(new Snode(map.bounds.maxlat, map.bounds.minlon));
@@ -76,7 +76,10 @@ public final class Renderer {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
             g2.setStroke(new BasicStroke(0, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
-            do {} while (!Rules.rules());
+        
+            final Rules rules = new Rules(this);
+
+            do {} while (!rules.rules());
         }
         if ((context.grid() > 0) && (map != null)) {
         	rose();
@@ -84,45 +87,45 @@ public final class Renderer {
         }
     }
 
-    public static void symbol(Symbol symbol) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, sScale, point.getX(), point.getY(), null, null);
     }
 
-    public static void symbol(Symbol symbol, Scheme scheme) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol, Scheme scheme) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, sScale, point.getX(), point.getY(), scheme, null);
     }
 
-    public static void symbol(Symbol symbol, Delta delta) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol, Delta delta) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, sScale, point.getX(), point.getY(), null, delta);
     }
 
-    public static void symbol(Symbol symbol, double scale, Delta delta) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol, double scale, Delta delta) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, (sScale * scale), point.getX(), point.getY(), null, delta);
     }
 
-    public static void symbol(Symbol symbol, Scheme scheme, Delta delta) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol, Scheme scheme, Delta delta) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, sScale, point.getX(), point.getY(), scheme, delta);
     }
 
-    public static void symbol(Symbol symbol, double scale, Scheme scheme) {
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+    public void symbol(Feature feature, Symbol symbol, double scale, Scheme scheme) {
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, symbol, (sScale * scale), point.getX(), point.getY(), scheme, null);
     }
 
-    public static void colLetters(ArrayList<?> cols) {
+    public void colLetters(Feature feature, ArrayList<?> cols) {
         	String str = "";
         	for (int i = 0; (i < cols.size()) && (i < 4); i++) {
         		str = str.concat(Rules.colourLetters.get(cols.get(i)));
         	}
-        	labelText(str, new Font("Arial", Font.PLAIN, 40), Color.black, new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, 40)));
+        	labelText(feature, str, new Font("Arial", Font.PLAIN, 40), Color.black, new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, 40)));
     }
 
-    public static void cluster(ArrayList<Symbol> symbols) {
+    public void cluster(Feature feature, ArrayList<Symbol> symbols) {
         Rectangle2D.Double bbox = null;
         if (symbols.size() > 4) {
             for (Instr instr : symbols.get(0)) {
@@ -135,67 +138,67 @@ public final class Renderer {
         }
         switch (symbols.size()) {
         case 1:
-            symbol(symbols.get(0), new Delta(Handle.CC, new AffineTransform()));
+            symbol(feature, symbols.get(0), new Delta(Handle.CC, new AffineTransform()));
             break;
         case 2:
-            symbol(symbols.get(0), new Delta(Handle.RC, new AffineTransform()));
-            symbol(symbols.get(1), new Delta(Handle.LC, new AffineTransform()));
+            symbol(feature, symbols.get(0), new Delta(Handle.RC, new AffineTransform()));
+            symbol(feature, symbols.get(1), new Delta(Handle.LC, new AffineTransform()));
             break;
         case 3:
-            symbol(symbols.get(0), new Delta(Handle.BC, new AffineTransform()));
-            symbol(symbols.get(1), new Delta(Handle.TR, new AffineTransform()));
-            symbol(symbols.get(2), new Delta(Handle.TL, new AffineTransform()));
+            symbol(feature, symbols.get(0), new Delta(Handle.BC, new AffineTransform()));
+            symbol(feature, symbols.get(1), new Delta(Handle.TR, new AffineTransform()));
+            symbol(feature, symbols.get(2), new Delta(Handle.TL, new AffineTransform()));
             break;
         case 4:
-            symbol(symbols.get(0), new Delta(Handle.BR, new AffineTransform()));
-            symbol(symbols.get(1), new Delta(Handle.BL, new AffineTransform()));
-            symbol(symbols.get(2), new Delta(Handle.TR, new AffineTransform()));
-            symbol(symbols.get(3), new Delta(Handle.TL, new AffineTransform()));
+            symbol(feature, symbols.get(0), new Delta(Handle.BR, new AffineTransform()));
+            symbol(feature, symbols.get(1), new Delta(Handle.BL, new AffineTransform()));
+            symbol(feature, symbols.get(2), new Delta(Handle.TR, new AffineTransform()));
+            symbol(feature, symbols.get(3), new Delta(Handle.TL, new AffineTransform()));
             break;
         case 5:
-            symbol(symbols.get(0), new Delta(Handle.BR, new AffineTransform()));
-            symbol(symbols.get(1), new Delta(Handle.BL, new AffineTransform()));
-            symbol(symbols.get(2), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(3), new Delta(Handle.TC, new AffineTransform()));
-            symbol(symbols.get(4), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(0), new Delta(Handle.BR, new AffineTransform()));
+            symbol(feature, symbols.get(1), new Delta(Handle.BL, new AffineTransform()));
+            symbol(feature, symbols.get(2), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(3), new Delta(Handle.TC, new AffineTransform()));
+            symbol(feature, symbols.get(4), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
             break;
         case 6:
-            symbol(symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(1), new Delta(Handle.BC, new AffineTransform()));
-            symbol(symbols.get(2), new Delta(Handle.BL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
-            symbol(symbols.get(3), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(4), new Delta(Handle.TC, new AffineTransform()));
-            symbol(symbols.get(5), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(1), new Delta(Handle.BC, new AffineTransform()));
+            symbol(feature, symbols.get(2), new Delta(Handle.BL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(3), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(4), new Delta(Handle.TC, new AffineTransform()));
+            symbol(feature, symbols.get(5), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
             break;
         case 7:
-            symbol(symbols.get(0), new Delta(Handle.BC, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
-            symbol(symbols.get(1), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(2), new Delta(Handle.CC, new AffineTransform()));
-            symbol(symbols.get(3), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
-            symbol(symbols.get(4), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
-            symbol(symbols.get(5), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
-            symbol(symbols.get(6), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(0), new Delta(Handle.BC, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
+            symbol(feature, symbols.get(1), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(2), new Delta(Handle.CC, new AffineTransform()));
+            symbol(feature, symbols.get(3), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(4), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(5), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
+            symbol(feature, symbols.get(6), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
             break;
         case 8:
-            symbol(symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
-            symbol(symbols.get(1), new Delta(Handle.BL, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
-            symbol(symbols.get(2), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(3), new Delta(Handle.CC, new AffineTransform()));
-            symbol(symbols.get(4), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
-            symbol(symbols.get(5), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
-            symbol(symbols.get(6), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
-            symbol(symbols.get(7), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
+            symbol(feature, symbols.get(1), new Delta(Handle.BL, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
+            symbol(feature, symbols.get(2), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(3), new Delta(Handle.CC, new AffineTransform()));
+            symbol(feature, symbols.get(4), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(5), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(6), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
+            symbol(feature, symbols.get(7), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
             break;
         case 9:
-            symbol(symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(-bbox.width/2, -bbox.height/2)));
-            symbol(symbols.get(1), new Delta(Handle.BC, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
-            symbol(symbols.get(2), new Delta(Handle.BL, AffineTransform.getTranslateInstance(bbox.width/2, -bbox.height/2)));
-            symbol(symbols.get(3), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
-            symbol(symbols.get(4), new Delta(Handle.CC, new AffineTransform()));
-            symbol(symbols.get(5), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
-            symbol(symbols.get(6), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
-            symbol(symbols.get(7), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
-            symbol(symbols.get(8), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(0), new Delta(Handle.BR, AffineTransform.getTranslateInstance(-bbox.width/2, -bbox.height/2)));
+            symbol(feature, symbols.get(1), new Delta(Handle.BC, AffineTransform.getTranslateInstance(0, -bbox.height/2)));
+            symbol(feature, symbols.get(2), new Delta(Handle.BL, AffineTransform.getTranslateInstance(bbox.width/2, -bbox.height/2)));
+            symbol(feature, symbols.get(3), new Delta(Handle.RC, AffineTransform.getTranslateInstance(-bbox.width/2, 0)));
+            symbol(feature, symbols.get(4), new Delta(Handle.CC, new AffineTransform()));
+            symbol(feature, symbols.get(5), new Delta(Handle.LC, AffineTransform.getTranslateInstance(bbox.width/2, 0)));
+            symbol(feature, symbols.get(6), new Delta(Handle.TR, AffineTransform.getTranslateInstance(-bbox.width/2, bbox.height/2)));
+            symbol(feature, symbols.get(7), new Delta(Handle.TC, AffineTransform.getTranslateInstance(0, bbox.height/2)));
+            symbol(feature, symbols.get(8), new Delta(Handle.TL, AffineTransform.getTranslateInstance(bbox.width/2, bbox.height/2)));
             break;
         }
     }
@@ -218,8 +221,8 @@ public final class Renderer {
         return null;
     }
 
-    public static void lineSymbols(Symbol prisymb, double space, Symbol secsymb, Symbol tersymb, int ratio, Color col) {
-        if ((Rules.feature.geom.prim == Pflag.NOSP) || (Rules.feature.geom.prim == Pflag.POINT))
+    public void lineSymbols(Feature feature, Symbol prisymb, double space, Symbol secsymb, Symbol tersymb, int ratio, Color col) {
+        if ((feature.geom.prim == Pflag.NOSP) || (feature.geom.prim == Pflag.POINT))
             return;
         Rectangle2D.Double prect = symbolSize(prisymb);
         Rectangle2D.Double srect = symbolSize(secsymb);
@@ -241,7 +244,7 @@ public final class Renderer {
             int stcount = ratio;
             boolean stflag = false;
             Symbol symbol = prisymb;
-            GeomIterator git = map.new GeomIterator(Rules.feature.geom);
+            GeomIterator git = map.new GeomIterator(feature.geom);
             while (git.hasComp()) {
                 git.nextComp();
                 boolean first = true;
@@ -303,11 +306,11 @@ public final class Renderer {
         }
     }
 
-    public static void lineVector(LineStyle style) {
+    public void lineVector(Feature feature, LineStyle style) {
         Path2D.Double p = new Path2D.Double();
         p.setWindingRule(GeneralPath.WIND_EVEN_ODD);
         Point2D point;
-        GeomIterator git = map.new GeomIterator(Rules.feature.geom);
+        GeomIterator git = map.new GeomIterator(feature.geom);
         while (git.hasComp()) {
             git.nextComp();
             boolean first = true;
@@ -328,7 +331,7 @@ public final class Renderer {
                 }
             }
         }
-        if ((style.fill != null) && (Rules.feature.geom.prim == Pflag.AREA)) {
+        if ((style.fill != null) && (feature.geom.prim == Pflag.AREA)) {
             g2.setPaint(style.fill);
             g2.fill(p);
         }
@@ -348,7 +351,7 @@ public final class Renderer {
         }
     }
     
-    public static void grid() {
+    public void grid() {
         if ((context.grid() > 0) && (map != null)) {
             LineStyle style = new LineStyle(Color.black, (float)2.0);
             Point2D point = context.getPoint(new Snode(map.bounds.minlat, map.bounds.maxlon));
@@ -484,7 +487,7 @@ public final class Renderer {
         }
     }
     
-    public static void rose() {
+    public void rose() {
         LineStyle style = new LineStyle(Color.black, (float)2.0);
         Point2D point = context.getPoint(new Snode(Math.toRadians(53.91649), Math.toRadians(-0.16141)));
         g2.setPaint(Color.white);
@@ -517,7 +520,7 @@ public final class Renderer {
         g2.draw(p);
     }
     
-    public static void lineCircle(LineStyle style, double radius, UniHLU units) {
+    public void lineCircle(Feature feature, LineStyle style, double radius, UniHLU units) {
         switch (units) {
         case HLU_FEET:
             radius /= 6076;
@@ -537,7 +540,7 @@ public final class Renderer {
             radius /= 1852;
             break;
         }
-        radius *= context.mile(Rules.feature);
+        radius *= context.mile(feature);
         Symbol circle = new Symbol();
         if (style.fill != null) {
             circle.add(new Instr(Form.FILL, style.fill));
@@ -546,22 +549,22 @@ public final class Renderer {
         circle.add(new Instr(Form.FILL, style.line));
         circle.add(new Instr(Form.STRK, new BasicStroke(style.width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1, style.dash, 0)));
         circle.add(new Instr(Form.ELPS, new Ellipse2D.Double(-radius, -radius, radius*2, radius*2)));
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, circle, 1, point.getX(), point.getY(), null, null);
     }
 
-    public static void fillPattern(BufferedImage image) {
+    public void fillPattern(Feature feature, BufferedImage image) {
         Path2D.Double p = new Path2D.Double();
         p.setWindingRule(GeneralPath.WIND_EVEN_ODD);
         Point2D point;
-        switch (Rules.feature.geom.prim) {
+        switch (feature.geom.prim) {
         case POINT:
-            point = context.getPoint(Rules.feature.geom.centre);
+            point = context.getPoint(feature.geom.centre);
             g2.drawImage(image, new AffineTransformOp(AffineTransform.getScaleInstance(sScale, sScale), AffineTransformOp.TYPE_NEAREST_NEIGHBOR),
                     (int) (point.getX() - (50 * sScale)), (int) (point.getY() - (50 * sScale)));
             break;
         case AREA:
-            GeomIterator git = map.new GeomIterator(Rules.feature.geom);
+            GeomIterator git = map.new GeomIterator(feature.geom);
             while (git.hasComp()) {
                 git.nextComp();
                 boolean newComp = true;
@@ -590,27 +593,27 @@ public final class Renderer {
         }
     }
 
-    public static void labelText(String str, Font font, Color tc) {
-        labelText(str, font, tc, LabelStyle.NONE, null, null, null);
+    public void labelText(Feature feature, String str, Font font, Color tc) {
+        labelText(feature, str, font, tc, LabelStyle.NONE, null, null, null);
     }
 
-    public static void labelText(String str, Font font, Color tc, Delta delta) {
-        labelText(str, font, tc, LabelStyle.NONE, null, null, delta);
+    public void labelText(Feature feature, String str, Font font, Color tc, Delta delta) {
+        labelText(feature, str, font, tc, LabelStyle.NONE, null, null, delta);
     }
 
-    public static void labelText(String str, Font font, Color tc, LabelStyle style, Color fg) {
-        labelText(str, font, tc, style, fg, null, null);
+    public void labelText(Feature feature, String str, Font font, Color tc, LabelStyle style, Color fg) {
+        labelText(feature, str, font, tc, style, fg, null, null);
     }
 
-    public static void labelText(String str, Font font, Color tc, LabelStyle style, Color fg, Color bg) {
-        labelText(str, font, tc, style, fg, bg, null);
+    public void labelText(Feature feature, String str, Font font, Color tc, LabelStyle style, Color fg, Color bg) {
+        labelText(feature, str, font, tc, style, fg, bg, null);
     }
 
-    public static void labelText(String str, Font font, Color tc, LabelStyle style, Color fg, Delta delta) {
-        labelText(str, font, tc, style, fg, null, delta);
+    public void labelText(Feature feature, String str, Font font, Color tc, LabelStyle style, Color fg, Delta delta) {
+        labelText(feature, str, font, tc, style, fg, null, delta);
     }
 
-    public static void labelText(String str, Font font, Color tc, LabelStyle style, Color fg, Color bg, Delta delta) {
+    public void labelText(Feature feature, String str, Font font, Color tc, LabelStyle style, Color fg, Color bg, Delta delta) {
         if (delta == null) delta = new Delta(Handle.CC);
         if (bg == null) bg = new Color(0x00000000, true);
         if (str == null || str.isEmpty()) str = " ";
@@ -722,11 +725,11 @@ public final class Renderer {
             break;
         }
         label.add(new Instr(Form.TEXT, new Caption(str, font, tc, new Delta(Handle.TL, AffineTransform.getTranslateInstance(tx, ty)))));
-        Point2D point = context.getPoint(Rules.feature.geom.centre);
+        Point2D point = context.getPoint(feature.geom.centre);
         Symbols.drawSymbol(g2, label, sScale, point.getX(), point.getY(), null, delta);
     }
 
-    public static void lineText(String str, Font font, Color colour, double dy) {
+    public void lineText(Feature feature, String str, Font font, Color colour, double dy) {
         if (!str.isEmpty()) {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setPaint(colour);
@@ -734,7 +737,7 @@ public final class Renderer {
             GlyphVector gv = font.deriveFont(font.getSize2D() * (float) sScale).createGlyphVector(frc, str);
             double width = gv.getVisualBounds().getWidth();
             double height = gv.getVisualBounds().getHeight();
-            double offset = (Rules.feature.geom.length * context.mile(Rules.feature) - width) / 2;
+            double offset = (feature.geom.length * context.mile(feature) - width) / 2;
             if (offset > 0) {
                 Point2D before = null;
                 Point2D after = null;
@@ -744,7 +747,7 @@ public final class Renderer {
                 double length = 0;
                 double lb = 0;
                 double la = 0;
-                GeomIterator git = map.new GeomIterator(Rules.feature.geom);
+                GeomIterator git = map.new GeomIterator(feature.geom);
                 if (git.hasComp()) {
                     git.nextComp();
                     while (git.hasEdge()) {
@@ -778,7 +781,7 @@ public final class Renderer {
                     double angle = Math.atan2((after.getY() - before.getY()), (after.getX() - before.getX()));
                     double rotate = Math.abs(angle) < (Math.PI / 2) ? angle : angle + Math.PI;
                     Point2D mid = new Point2D.Double((before.getX() + after.getX()) / 2, (before.getY() + after.getY()) / 2);
-                    Point2D centre = context.getPoint(Rules.feature.geom.centre);
+                    Point2D centre = context.getPoint(feature.geom.centre);
                     AffineTransform pos = AffineTransform.getTranslateInstance(-dy * Math.sin(rotate), dy * Math.cos(rotate));
                     pos.rotate(rotate);
                     pos.translate((mid.getX() - centre.getX()), (mid.getY() - centre.getY()));
@@ -791,13 +794,13 @@ public final class Renderer {
         }
     }
 
-    public static void lightSector(Color col1, Color col2, double radius, double s1, double s2, Double dir, String str) {
+    public void lightSector(Feature feature, Color col1, Color col2, double radius, double s1, double s2, Double dir, String str) {
         double mid = (((s1 + s2) / 2) + (s1 > s2 ? 180 : 0)) % 360;
         g2.setStroke(new BasicStroke((float) (3.0 * sScale), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 1,
                 new float[] {20 * (float) sScale, 20 * (float) sScale}, 0));
         g2.setPaint(Color.black);
-        Point2D.Double centre = (Point2D.Double) context.getPoint(Rules.feature.geom.centre);
-        double radial = radius * context.mile(Rules.feature);
+        Point2D.Double centre = (Point2D.Double) context.getPoint(feature.geom.centre);
+        double radial = radius * context.mile(feature);
         if (dir != null) {
             g2.draw(new Line2D.Double(centre.x, centre.y, centre.x - radial * Math.sin(Math.toRadians(dir)),
                     centre.y + radial * Math.cos(Math.toRadians(dir))));
@@ -829,11 +832,11 @@ public final class Renderer {
             AffineTransform at = AffineTransform.getTranslateInstance(-radial * Math.sin(phi) / sScale, radial * Math.cos(phi) / sScale);
             if ((font.getSize() * sScale * str.length()) < awidth) {
                 at.rotate(Math.toRadians(mid + (hand ? 0 : 180)));
-                labelText(str, font, Color.black, new Delta(Handle.CC, at));
+                labelText(feature, str, font, Color.black, new Delta(Handle.CC, at));
             } else if ((font.getSize() * sScale) < awidth) {
                 hand = (mid < 180);
                 at.rotate(Math.toRadians(mid + (hand ? -90 : 90)));
-                labelText(str, font, Color.black, hand ? new Delta(Handle.RC, at) : new Delta(Handle.LC, at));
+                labelText(feature, str, font, Color.black, hand ? new Delta(Handle.RC, at) : new Delta(Handle.LC, at));
             }
             if (dir != null) {
                 font = new Font("Arial", Font.PLAIN, 30);
@@ -843,16 +846,16 @@ public final class Renderer {
                 radial -= 70 * sScale;
                 at = AffineTransform.getTranslateInstance(-radial * Math.sin(phi) / sScale, radial * Math.cos(phi) / sScale);
                 at.rotate(Math.toRadians(dir + (hand ? 90 : -90)));
-                labelText(str, font, Color.black, hand ? new Delta(Handle.BR, at) : new Delta(Handle.BL, at));
+                labelText(feature, str, font, Color.black, hand ? new Delta(Handle.BR, at) : new Delta(Handle.BL, at));
             }
         }
     }
     
-    public static void rasterPixel(double size, Color col) {
-    	double s = Rules.feature.geom.centre.lat - (size / 2.0);
-    	double w = Rules.feature.geom.centre.lon - (size / 2.0);
-    	double n = Rules.feature.geom.centre.lat + (size / 2.0);
-    	double e = Rules.feature.geom.centre.lon + (size / 2.0);
+    public void rasterPixel(Feature feature, double size, Color col) {
+    	double s = feature.geom.centre.lat - (size / 2.0);
+    	double w = feature.geom.centre.lon - (size / 2.0);
+    	double n = feature.geom.centre.lat + (size / 2.0);
+    	double e = feature.geom.centre.lon + (size / 2.0);
     	Point2D sw = context.getPoint(new Snode(s, w)); 
     	Point2D nw = context.getPoint(new Snode(n, w)); 
     	Point2D ne = context.getPoint(new Snode(n, e)); 
