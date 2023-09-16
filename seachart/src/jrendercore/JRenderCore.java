@@ -130,13 +130,15 @@ public final class JRenderCore {
     private static void removeEmptyDirs(File dir) {
         final File[] files = dir.listFiles();
 
-        for (File child : files) {
-            if (child.isDirectory()) {
-                removeEmptyDirs(child);
+        if (files != null) {
+            for (File child : files) {
+                if (child.isDirectory()) {
+                    removeEmptyDirs(child);
+                }
             }
         }
 
-        if (files.length == 0) {
+        if (files == null || files.length == 0) {
             dir.delete();
         }
     }
