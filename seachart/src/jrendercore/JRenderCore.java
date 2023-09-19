@@ -55,10 +55,6 @@ public final class JRenderCore {
 
     /** Creates an instance of JRenderCore with the specified tile size and scale */
     public JRenderCore(int tileSize, double scale) {
-        if (tileSize != scale * DEFAULT_TILE_SIZE) {
-            throw new InvalidParameterException("tileSize / scale must equal 256");
-        }
-
         this.tileSize = tileSize;
         this.scale = scale;
         this.context = new JRenderContext();
@@ -84,10 +80,21 @@ public final class JRenderCore {
     public Bounds getEpsg3857Bounds(int zoom, int tileX, int tileY) {
         final int pow = 1 << zoom; // 2^zoom
 
-        final double west = (double) tileX / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
-        final double east = (double) (tileX + 1) / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
-        final double north = (double) (pow - tileY) / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
-        final double south = (double) (pow - tileY - 1) / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
+        // Top left of the tile
+        final double left = tileX;
+        final double top = pow - tileY;
+        
+        // Bottom right of the tile.
+        // Don't assume the the tileSize requested is a single standard tile
+        // eg. A tile size of 2048 may be requested at a scale=1, therefore the area
+        // will actually be 8x8 standard tiles
+        final double right = left + (double)tileSize / DEFAULT_TILE_SIZE / scale;
+        final double bottom = top - (double)tileSize / DEFAULT_TILE_SIZE / scale;
+
+        final double west = left / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
+        final double east = right / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
+        final double north = top / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
+        final double south = bottom / pow * MERCATOR_WIDTH - MERCATOR_OFFSET;
 
         return new Bounds(south, west, north, east);
     }
@@ -169,7 +176,7 @@ public final class JRenderCore {
         final Graphics2D g2 = img.createGraphics();
 
         // Translate to the origin of the tile
-        g2.translate(-tileX * tileSize, -tileY * tileSize);
+        g2.translate(-(double)tileX * DEFAULT_TILE_SIZE * scale, -(double)tileY * DEFAULT_TILE_SIZE * scale);
 
         // Render
         Renderer.reRender(
@@ -282,7 +289,7 @@ public final class JRenderCore {
         @Override
         public Point2D getPoint(Snode coord) {
             // Number of pixels across the map
-            final double pixels = (double) tileSize * pow;
+            final double pixels = (double) DEFAULT_TILE_SIZE * scale * pow;
 
             // x, y are a
             final double x = (coord.lon + Math.PI) / (2 * Math.PI);
