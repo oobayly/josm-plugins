@@ -173,7 +173,10 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
                                 w = candidateWay;
                                 candidateWay = tmp;
                             }
-                            commands.add(new DeleteCommand(w));
+                            final Command deleteCommand = DeleteCommand.delete(Collections.singleton(w));
+                            if (deleteCommand != null) {
+                                commands.add(deleteCommand);
+                            }
                         }
                     }
                 }
@@ -203,7 +206,7 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
         setEnabled(isSuitableRelation(newRelation));
     }
 
-    private boolean isSuitableRelation(Relation newRelation) {
+    private static boolean isSuitableRelation(Relation newRelation) {
         return newRelation != null && "multipolygon".equals(newRelation.get("type")) && newRelation.getMembersCount() != 0;
     }
 }
