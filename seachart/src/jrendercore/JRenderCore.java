@@ -176,7 +176,7 @@ public final class JRenderCore {
         final Graphics2D g2 = img.createGraphics();
 
         // Translate to the origin of the tile
-        g2.translate(-tileX * tileSize, -tileY * tileSize);
+        g2.translate(-(double)tileX * DEFAULT_TILE_SIZE * scale, -(double)tileY * DEFAULT_TILE_SIZE * scale);
 
         // Render
         Renderer.reRender(
