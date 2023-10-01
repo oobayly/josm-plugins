@@ -288,20 +288,29 @@ public final class JRenderCore {
 
         @Override
         public Point2D getPoint(Snode coord) {
-            // Number of pixels across the map
-            final double pixels = (double) DEFAULT_TILE_SIZE * scale * pow;
+            // Number of pixels across the map per radian
+            final double pixels = (double) DEFAULT_TILE_SIZE * scale * pow / 2 / Math.PI;
 
-            // x, y are a
-            final double x = (coord.lon + Math.PI) / (2 * Math.PI);
-            final double secLat = 1.0 / Math.cos(coord.lat); // sec(lat)
-            final double y = (1 - (Math.log(Math.tan(coord.lat) + secLat) / Math.PI)) / 2;
+            // https://en.wikipedia.org/wiki/Web_Mercator_projection
+            final double x = (coord.lon + Math.PI);
+            final double y = (Math.PI - Math.log(Math.tan(Math.PI / 4 + coord.lat / 2)));
 
             return new Point2D.Double(x * pixels, y * pixels);
         }
 
         @Override
         public double mile(Feature feature) {
-            return 330.0 * pow * 16384.0 * scale;
+            // To get the length of a NM in pixels, we need to find the number of pixels between
+            // the minute of latitude about the feature's location
+            final double halfNM = Math.toRadians(0.5 / 60);
+            final double lat = feature.geom.centre.lat - halfNM;
+            final double lat2 = feature.geom.centre.lat + halfNM;
+   
+            // Using the derivative may be faster...
+            final double y = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat / 2)));
+            final double y2 = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat2 / 2)));
+            
+            return (y - y2) * (double) DEFAULT_TILE_SIZE * scale * pow / 2 / Math.PI;
         }
 
         @Override
