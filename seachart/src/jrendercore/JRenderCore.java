@@ -300,17 +300,33 @@ public final class JRenderCore {
 
         @Override
         public double mile(Feature feature) {
-            // To get the length of a NM in pixels, we need to find the number of pixels between
-            // the minute of latitude about the feature's location
-            final double halfNM = Math.toRadians(0.5 / 60);
-            final double lat = feature.geom.centre.lat - halfNM;
-            final double lat2 = feature.geom.centre.lat + halfNM;
+            /* To get the length of a NM in pixels. We can use the derivative of the y function
+             * at the location of the feature.
+             * y = (Math.PI - Math.log(Math.tan(Math.PI / 4 + coord.lat / 2)));
+             * Using Wolfram, this simlifies to...
+             * dy/dLat = -sec(lat) 
+             * Therfore, for a distance of 1NM (1 minute of latitude)
+             * y(1NM) = dy/dLat * (1deg / 60) = -sec(lat) * Math.toRadians(1.0 / 60)
+             * But the y-axis direction is flipped in Web Mercator projection, so
+             * y(1NM) = Math.toRadians(1.0 / 60) / Math.cos(lat)
+             * And then scale the result to the number of pixels
+             */
+
+            final double dy = Math.toRadians(1.0 / 60) / Math.cos(feature.geom.centre.lat);
+
+            return dy * DEFAULT_TILE_SIZE * scale * pow / 2 / Math.PI;
+
+            // // To get the length of a NM in pixels, we need to find the number of pixels between
+            // // the minute of latitude about the feature's location
+            // final double halfNM = Math.toRadians(0.5 / 60);
+            // final double lat = feature.geom.centre.lat - halfNM;
+            // final double lat2 = feature.geom.centre.lat + halfNM;
    
-            // Using the derivative may be faster...
-            final double y = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat / 2)));
-            final double y2 = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat2 / 2)));
+            // // Using the derivative may be faster...
+            // final double y = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat / 2)));
+            // final double y2 = (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat2 / 2)));
             
-            return (y - y2) * (double) DEFAULT_TILE_SIZE * scale * pow / 2 / Math.PI;
+            // return (y - y2) * (double) DEFAULT_TILE_SIZE * scale * pow / 2 / Math.PI;
         }
 
         @Override
