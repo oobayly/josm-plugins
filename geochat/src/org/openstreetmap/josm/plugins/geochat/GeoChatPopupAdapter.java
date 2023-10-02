@@ -1,5 +1,5 @@
 // License: WTFPL. For details, see LICENSE file.
-package geochat;
+package org.openstreetmap.josm.plugins.geochat;
 
 import static org.openstreetmap.josm.tools.I18n.tr;
 
@@ -19,7 +19,7 @@ import org.openstreetmap.josm.gui.MainApplication;
  * @author zverik
  */
 class GeoChatPopupAdapter extends MouseAdapter {
-    private GeoChatPanel panel;
+    private final GeoChatPanel panel;
 
     GeoChatPopupAdapter(GeoChatPanel panel) {
         this.panel = panel;
@@ -61,7 +61,7 @@ class GeoChatPopupAdapter extends MouseAdapter {
     }
 
     private class PrivateChatAction extends AbstractAction {
-        private String userName;
+        private final String userName;
 
         PrivateChatAction(String userName) {
             super(userName);

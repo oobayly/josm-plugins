@@ -71,7 +71,8 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
         }
         if (wont) {
             JOptionPane.showMessageDialog(MainApplication.getMainFrame(),
-                    tr("Multipolygon must consist only of ways"), tr("Reconstruct polygon"), JOptionPane.ERROR_MESSAGE);
+                    tr("Multipolygon must consist only of ways with one referring relation"),
+                    tr("Reconstruct polygon"), JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -155,10 +156,10 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
             tags.putAll(r.getKeys());
             tags.remove("type");
 
-            // then delete ways that are not relevant (do not take part in other relations of have strange tags)
+            // then delete ways that are not relevant (do not take part in other relations or have strange tags)
             Way candidateWay = null;
             for (Way w : p.ways) {
-                if (w.getReferrers().equals(relations)) {
+                if (w.getReferrers().size() == 1) {
                     // check tags that remain
                     Set<String> keys = new HashSet<>(w.keySet());
                     keys.removeAll(tags.keySet());
@@ -173,10 +174,7 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
                                 w = candidateWay;
                                 candidateWay = tmp;
                             }
-                            final Command deleteCommand = DeleteCommand.delete(Collections.singleton(w));
-                            if (deleteCommand != null) {
-                                commands.add(deleteCommand);
-                            }
+                            commands.add(new DeleteCommand(w));
                         }
                     }
                 }
@@ -193,7 +191,8 @@ public class ReconstructPolygonAction extends JosmAction implements ChosenRelati
 
         // only delete the relation if it hasn't been re-used
         if (!relationReused) {
-            commands.add(relationDeleteCommand);
+            // The relation needs to be deleted first, so that undo/redo continue to work properly
+            commands.add(0, relationDeleteCommand);
         }
 
         UndoRedoHandler.getInstance().add(new SequenceCommand(tr("Reconstruct polygons from relation {0}",
