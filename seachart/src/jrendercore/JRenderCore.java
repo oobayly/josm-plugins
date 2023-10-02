@@ -49,15 +49,33 @@ public final class JRenderCore {
     }
 
     /** Creates an instance of JRenderCore with the specified tile size. */
-    public JRenderCore(int tileSize) {
+    public JRenderCore(final int tileSize) {
         this(tileSize, (double) tileSize / DEFAULT_TILE_SIZE);
     }
 
     /** Creates an instance of JRenderCore with the specified tile size and scale */
-    public JRenderCore(int tileSize, double scale) {
+    public JRenderCore(final int tileSize, final double scale) {
         this.tileSize = tileSize;
         this.scale = scale;
         this.context = new JRenderContext();
+    }
+
+    /** Cleans the spcified path recursively down to the specified max zoom level. */
+    private void cleanPath(final String path, final int zoom, final int tileX, final int tileY, final int maxZoom, final ArrayList<String> deletes) {
+        final File file = getTilePath(path, zoom, tileX, tileY).toFile();
+
+        if (file.exists()) {
+            file.delete();
+            deletes.add(String.format("rm %s", file));
+        }
+
+        if (zoom < maxZoom) {
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    cleanPath(path, zoom + 1, tileX * 2 + i, tileY * 2 + j, maxZoom, deletes);
+                }
+            }
+        }
     }
 
     /** Gets the size of an empty PNG. */
@@ -77,7 +95,7 @@ public final class JRenderCore {
      * 
      * @return The bounding box with coordinates in radians.
      */
-    public Bounds getEpsg3857Bounds(int zoom, int tileX, int tileY) {
+    public Bounds getEpsg3857Bounds(final int zoom, final int tileX, final int tileY) {
         final int pow = 1 << zoom; // 2^zoom
 
         // Top left of the tile
@@ -104,7 +122,7 @@ public final class JRenderCore {
      * 
      * @return The border in radians. Useful for padding out a bounding box.
      */
-    public double getMercatorBorder(int zoom) {
+    public double getMercatorBorder(final int zoom) {
         final int pow = 1 << zoom; // 2^zoom
         final int border = (zoom < 12) ? tileSize >> (11 - zoom) : tileSize;
 
@@ -112,29 +130,29 @@ public final class JRenderCore {
     }
 
     /** Gets the path to a tile's PNG file. */
-    public static Path getTilePath(String prefix, final int zoom, final int tileX, final int tileY) {
+    public static Path getTilePath(final String prefix, final int zoom, final int tileX, final int tileY) {
         return Paths.get(prefix, String.valueOf(zoom), String.valueOf(tileX), String.format("%d.png", tileY));
     }
 
     /** Loads the specified file containing OSM data into the map. */
-    public void loadOsmData(String fileName) throws Exception {
+    public void loadOsmData(final String fileName) throws Exception {
         loadOsmData(new File(fileName));
     }
 
     /** Loads the specified file containing OSM data into the map. */
-    public void loadOsmData(File file) throws Exception {
+    public void loadOsmData(final File file) throws Exception {
         map = new S57map(true);
         S57osm.OSMmap(file, map, false);
     }
 
     /** Loads the specified document containing OSM data into the map. */
-    public void loadOsmData(Document osmDoc) throws Exception {
+    public void loadOsmData(final Document osmDoc) throws Exception {
         map = new S57map(true);
         S57osm.OSMmap(osmDoc, map, false);
     }
 
     /** Recursively remove empty directories */
-    private static void removeEmptyDirs(File dir) {
+    private static void removeEmptyDirs(final File dir) {
         final File[] files = dir.listFiles();
 
         if (files != null) {
@@ -151,7 +169,7 @@ public final class JRenderCore {
     }
 
     /** Render the specified tile to the specified file. */
-    public void render(int zoom, int tileX, int tileY, String file) throws Exception {
+    public void render(final int zoom, final int tileX, final int tileY, final String file) throws Exception {
         FileOutputStream fos = new FileOutputStream(file);
 
         render(zoom, tileX, tileY, fos);
@@ -160,7 +178,7 @@ public final class JRenderCore {
     }
 
     /** Render the specified tile to the specified file. */
-    public void render(int zoom, int tileX, int tileY, File file) throws Exception {
+    public void render(final int zoom, final int tileX, final int tileY, final File file) throws Exception {
         FileOutputStream fos = new FileOutputStream(file);
 
         render(zoom, tileX, tileY, fos);
@@ -169,7 +187,7 @@ public final class JRenderCore {
     }
 
     /** Render the specified tile to the specified OutputStream. */
-    public void render(int zoom, int tileX, int tileY, OutputStream oStream) throws Exception {
+    public void render(final int zoom, final int tileX, final int tileY, final OutputStream oStream) throws Exception {
         context.setZoom(zoom);
 
         final BufferedImage img = new BufferedImage(tileSize, tileSize, BufferedImage.TYPE_INT_ARGB);
@@ -195,7 +213,7 @@ public final class JRenderCore {
      * 
      * @return A BatchResponse object that contains the files created and deleted.
      */
-    public BatchResponse render(final int zoom, int tileX, int tileY, final int maxZoom, String path) throws Exception {
+    public BatchResponse render(final int zoom, final int tileX, final int tileY, final int maxZoom, final String path) throws Exception {
         if (maxZoom < zoom) {
             throw new InvalidParameterException("maxZoom cannot be less than zoom");
         }
@@ -241,7 +259,7 @@ public final class JRenderCore {
             outFile.delete();
 
             // List of files deleted
-            response.sends.add(String.format("rm %s", outFile));
+            response.deletes.add(String.format("rm %s", outFile));
         }
 
         // Only recurse if less than max zoom, and the ZL < 16, or there is some data
@@ -252,6 +270,10 @@ public final class JRenderCore {
                     render(zoom + 1, tileX * 2 + i, tileY * 2 + j, maxZoom, path, response);
                 }
             }
+        } else if (!hasData && zoom >= 12) {
+            // At ZL 12, if nothing's been rendered, then nothing will be rendered in tiles at higher zoom levels
+            // The tile still needs to be recursed into as there may be existing files present
+            cleanPath(path, zoom, tileX, tileY, maxZoom, response.deletes);
         }
     }
 
