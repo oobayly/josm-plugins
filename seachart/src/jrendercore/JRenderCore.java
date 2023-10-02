@@ -60,6 +60,24 @@ public final class JRenderCore {
         this.context = new JRenderContext();
     }
 
+    /** Cleans the spcified path recursively down to the specified max zoom level. */
+    private void cleanPath(String path, int zoom, int tileX, int tileY, int maxZoom, ArrayList<String> deletes) {
+        final File file = getTilePath(path, zoom, tileX, tileY).toFile();
+
+        if (file.exists()) {
+            file.delete();
+            deletes.add(String.format("rm %s", file));
+        }
+
+        if (zoom < maxZoom) {
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    cleanPath(path, zoom + 1, tileX * 2 + i, tileY * 2 + j, maxZoom, deletes);
+                }
+            }
+        }
+    }
+
     /** Gets the size of an empty PNG. */
     private int getEmptySize() throws IOException {
         if (emptySize == -1) {
@@ -241,7 +259,7 @@ public final class JRenderCore {
             outFile.delete();
 
             // List of files deleted
-            response.sends.add(String.format("rm %s", outFile));
+            response.deletes.add(String.format("rm %s", outFile));
         }
 
         // Only recurse if less than max zoom, and the ZL < 16, or there is some data
@@ -252,6 +270,10 @@ public final class JRenderCore {
                     render(zoom + 1, tileX * 2 + i, tileY * 2 + j, maxZoom, path, response);
                 }
             }
+        } else if (!hasData && zoom >= 12) {
+            // At ZL 12, if nothing's been rendered, then nothing will be rendered in tiles at higher zoom levels
+            // The path still needs to be recursed into as there may be existing files present
+            cleanPath(path, zoom, tileX, tileY, maxZoom, response.deletes);
         }
     }
 
